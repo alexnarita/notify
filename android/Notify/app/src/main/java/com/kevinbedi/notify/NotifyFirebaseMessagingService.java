@@ -20,7 +20,7 @@ public class NotifyFirebaseMessagingService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         SharedPreferences prefs = getSharedPreferences(getString(R.string.settings_file), MODE_PRIVATE);
         Boolean sound = prefs.getBoolean(getString(R.string.menu_sound), true);
         Boolean vibration = prefs.getBoolean(getString(R.string.menu_vibration), true);

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -13,6 +14,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.content.SharedPreferences;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -63,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements GcmTokenManager.L
 
         mAuth.addAuthStateListener(mAuthListener);
 
+
         if (mAuth.getCurrentUser() != null) {
             updateText();
         } else {
@@ -78,7 +83,13 @@ public class MainActivity extends AppCompatActivity implements GcmTokenManager.L
     }
 
     private void signIn() {
-        mAuth.signInAnonymously();
+        Task<AuthResult> authResultTask = mAuth.signInAnonymously();
+        authResultTask.addOnSuccessListener(new OnSuccessListener<AuthResult>() {
+            @Override
+            public void onSuccess(AuthResult authResult) {
+                Log.d("NOTIFY|signIn", "Successful");
+            }
+        });
     }
 
     private void updateText() {

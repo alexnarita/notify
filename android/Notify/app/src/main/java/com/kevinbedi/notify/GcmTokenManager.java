@@ -2,14 +2,24 @@ package com.kevinbedi.notify;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
+import android.util.Log;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 public class GcmTokenManager {
 
@@ -43,34 +53,39 @@ public class GcmTokenManager {
             return;
         }
 
-        final String refreshedToken = FirebaseInstanceId.getInstance().getToken();
-        final FirebaseDatabase database = FirebaseDatabase.getInstance();
-
-        final DatabaseReference outerRef = database.getReference("users/" +
-                FirebaseAuth.getInstance().getCurrentUser().getUid() +
-                "/token");
-        outerRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                String token;
-                if (dataSnapshot != null && dataSnapshot.getValue() != null) {
-                    token = dataSnapshot.getValue(String.class);
-                } else {
-                    token = maybeGenerateToken(context);
-                }
+            public void onSuccess(InstanceIdResult instanceIdResult) {
+                final String refreshedToken = instanceIdResult.getToken();
+                final FirebaseFirestore database = FirebaseFirestore.getInstance();
 
-                DatabaseReference ref = database.getReference("tokens/" + token + "/gcmToken");
-                ref.setValue(refreshedToken);
-                outerRef.setValue(token);
+                final String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                database.collection("users").document(userId).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            String token;
+                            if (document != null && document.get("token") != null) {
+                                token = document.getString("token");
+                            } else {
+                                token = maybeGenerateToken(context);
+                            }
 
-                if (mListener != null) {
-                    mListener.onTokenGenerated();
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // TODO do something?
+                            Map<String, Object> tokens = new HashMap<>();
+                            tokens.put("gcmToken", refreshedToken);
+                            database.collection("tokens").document(token).set(tokens);
+                            tokens.clear();
+                            tokens.put("token", token);
+                            database.collection("users").document(userId).set(tokens);
+                            if (mListener != null) {
+                                mListener.onTokenGenerated();
+                            }
+                        } else {
+                            Log.d("NOTIFY:GCMTKMNGR", "task unsuccessful ", task.getException());
+                        }
+                    }
+                });
             }
         });
     }

@@ -74,7 +74,7 @@ then
 fi
 
 if curl -g -s -G \
-    'https://us-central1-notify-b7652.cloudfunctions.net/sendNotification' \
+    'https://BBBBBBBBBBBBBBBBBBBBBBBBBBB.cloudfunctions.net/sendNotification' \
     --data-urlencode "to=$TOKEN" \
     --data-urlencode "text=$TEXT" \
     --data-urlencode "title=$TITLE" \

@@ -1,7 +1,23 @@
 const functions = require('firebase-functions');
-
 const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);
+const firebase = require('firebase');
+
+// Input here information from your firebase
+// Project overview >> Add app >> </>
+// copy data from snippet window
+var config = {
+    apiKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    authDomain: "BBBBBBBBBBBBBBBBBB.firebaseapp.com",
+    databaseURL: "https://BBBBBBBBBBBBBBBBBB.firebaseio.com",
+    projectId: "BBBBBBBBBBBBBBBBBB",
+    storageBucket: "BBBBBBBBBBBBBBBBBB.appspot.com",
+    messagingSenderId: "000000000000"
+  };
+
+admin.initializeApp(config);
+firebase.initializeApp(config);
+
+const settings = {timestampsInSnapshots: true};
 
 exports.sendNotification = functions.https.onRequest((request, response) => {
   var params = request.query;
@@ -15,30 +31,32 @@ exports.sendNotification = functions.https.onRequest((request, response) => {
     return;
   }
 
-  var db = admin.database();
-  return db.ref('tokens/' + to + '/gcmToken').once('value').then(function(snap) {
-    to = snap.val();
+  var db = firebase.firestore();
 
-    if (!to) {
+  /* The following is line is to avoid warning messages */
+  db.settings(settings);
+
+  return db.collection('tokens').doc(to).get().then(function(snap) {
+
+    if (!snap.exists) {
       response.json({success: false, error: 'Invalid "to" param specified.'});
       return;
     }
 
-    var payload = {
-      data: {
+    var message = {
+      notification: {
         title: title,
-        text: text,
+        body: text,
       },
+      token: snap.data()['gcmToken']
     };
 
-    console.log("[Notify] Sending message to " + to);
-    admin.messaging().sendToDevice(to, payload)
+    admin.messaging().send(message)
+    // admin.messaging().sendToDevice(snap.data()['gcmToken'], payload) //bkp
       .then(() => {
-        console.log("[Notify] Sent message to " + to);
         response.json({success: true});
       })
       .catch((error) => {
-        console.warn("[Notify] Unable to send message to " + to, error);
         response.json({success: false, error: error});
       });
   });

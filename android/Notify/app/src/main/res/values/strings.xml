@@ -5,4 +5,6 @@
     <string name="menu_vibration">Vibration</string>
     <string name="settings_file">Settings</string>
     <string name="your_token">YOUR TOKEN</string>
+    <string name="channel_name">Push Notification</string>
+    <string name="channel_description">This channel is used by Notify app for notifications originated from you computer\'s CLI.</string>
 </resources>

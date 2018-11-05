@@ -1,5 +1,8 @@
 package com.kevinbedi.notify;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -19,6 +22,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+
+import static com.kevinbedi.notify.NotifyFirebaseMessagingService.CHANNEL_ID;
 
 public class MainActivity extends AppCompatActivity implements GcmTokenManager.Listener {
 
@@ -66,6 +71,10 @@ public class MainActivity extends AppCompatActivity implements GcmTokenManager.L
         mVibration = mPrefs.getBoolean(getString(R.string.menu_vibration), true);
 
         mAuth.addAuthStateListener(mAuthListener);
+
+        // Prepares notification channels
+        // SDK guard is inside function.
+        createNotificationChannel();
 
 
         if (mAuth.getCurrentUser() != null) {
@@ -131,6 +140,22 @@ public class MainActivity extends AppCompatActivity implements GcmTokenManager.L
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
         }
     }
 }
